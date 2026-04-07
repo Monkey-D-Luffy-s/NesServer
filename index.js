@@ -9,7 +9,11 @@ const client = new Client({
     authStrategy: new LocalAuth(), // Saves session to avoid re-scanning QR
     puppeteer: {
         handleSIGINT: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ["--disable-setuid-sandbox",
+            "--no-sandbox",
+            "--single-process",
+            "--no-zygote"],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
     }
 });
 
