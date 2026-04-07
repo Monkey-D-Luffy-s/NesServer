@@ -3,25 +3,26 @@ const qrcode = require('qrcode-terminal');
 const cron = require('node-cron');
 const { fetchMarketNews } = require('./newsService');
 require('dotenv').config();
+const puppeteer = require('puppeteer');
 
+async function startBrowser() {
+    const browser = await puppeteer.launch({
+        args: [
+            "--disable-setuid-sandbox",
+            "--no-sandbox",
+            "--single-process",
+            "--no-zygote"
+        ],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+    });
+    return browser;
+}
 // 1. Initialize WhatsApp Client
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth(), // Saves session to avoid re-scanning QR
     puppeteer: {
-        headless: false,
         handleSIGINT: false,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-accelerated-2d-canvas",
-            "--no-first-run",
-            "--no-zygote",
-            "--single-process", // Highly recommended for limited-resource servers
-            "--disable-gpu"
-        ],
-        // Remove the hardcoded executablePath or use an environment variable
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined, 
+        args: ['--no-sandbox', '--disable-setuid-sandbox','--disable-dev-shm-usage']
     }
 });
 

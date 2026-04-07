@@ -12,7 +12,8 @@
   "main": "test.js",
   "scripts": {
     "build": "./render-build.sh",
-    "start": "node index.js",
+    "start": "node your-app-filename.js",
+  "postinstall": "puppeteer install --chrome",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
