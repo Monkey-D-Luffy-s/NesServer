@@ -8,6 +8,7 @@ require('dotenv').config();
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
+        headless: false,
         handleSIGINT: false,
         args: [
             "--no-sandbox",
