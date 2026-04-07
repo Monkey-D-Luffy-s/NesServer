@@ -6,14 +6,21 @@ require('dotenv').config();
 
 // 1. Initialize WhatsApp Client
 const client = new Client({
-    authStrategy: new LocalAuth(), // Saves session to avoid re-scanning QR
+    authStrategy: new LocalAuth(),
     puppeteer: {
         handleSIGINT: false,
-        args: ["--disable-setuid-sandbox",
+        args: [
             "--no-sandbox",
-            "--single-process",
-            "--no-zygote"],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-accelerated-2d-canvas",
+            "--no-first-run",
+            "--no-zygote",
+            "--single-process", // Highly recommended for limited-resource servers
+            "--disable-gpu"
+        ],
+        // Remove the hardcoded executablePath or use an environment variable
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined, 
     }
 });
 
