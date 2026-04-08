@@ -1,38 +1,49 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const cron = require('node-cron');
+const express = require('express'); // Added Express
 const { fetchMarketNews } = require('./newsService');
 require('dotenv').config();
-const puppeteer = require('puppeteer');
 
-async function startBrowser() {
-    const browser = await puppeteer.launch({
-        args: [
-            "--disable-setuid-sandbox",
-            "--no-sandbox",
-            "--single-process",
-            "--no-zygote"
-        ],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
-    });
-    return browser;
-}
-// 1. Initialize WhatsApp Client
+// 1. Initialize Express Server (Mandatory for Render)
+const app = express();
+const port = process.env.PORT || 10000;
+
+app.get('/', (req, res) => {
+    res.send('WhatsApp Bot is running and healthy!');
+});
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Web server is listening on port ${port}`);
+});
+
+// 2. Initialize WhatsApp Client with Memory-Optimized Settings
 const client = new Client({
-    authStrategy: new LocalAuth(), // Saves session to avoid re-scanning QR
+    authStrategy: new LocalAuth(), 
     puppeteer: {
-        handleSIGINT: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox','--disable-dev-shm-usage']
+        headless: true,
+        // These args are critical for running in low-memory Docker environments
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process', // Helps significantly with memory
+            '--disable-gpu'
+        ],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
     }
 });
 
-// 2. Generate QR Code for Login
+// 3. Generate QR Code for Login
 client.on('qr', (qr) => {
     console.log('Scan the QR code below with your WhatsApp:');
     qrcode.generate(qr, { small: true });
 });
 
-// 3. Logic to execute when connected
+// 4. Logic to execute when connected
 client.on('ready', () => {
     console.log('WhatsApp Client is ready!');
     const targetNumber = process.env.TARGET_PHONE_NUMBER;
@@ -40,14 +51,17 @@ client.on('ready', () => {
     // Schedule the task
     cron.schedule(process.env.CRON_SCHEDULE, async () => {
         console.log('Running scheduled news update...');
-        const newsMessage = await fetchMarketNews();
-        
-        client.sendMessage(targetNumber, newsMessage)
-            .then(() => console.log('News sent successfully!'))
-            .catch(err => console.error('Failed to send news:', err));
+        try {
+            const newsMessage = await fetchMarketNews();
+            await client.sendMessage(targetNumber, newsMessage);
+            console.log('News sent successfully!');
+        } catch (err) {
+            console.error('Failed to send news:', err);
+        }
     });
 
     console.log(`Scheduler started: ${process.env.CRON_SCHEDULE}`);
 });
 
+// 5. Start the client
 client.initialize();
